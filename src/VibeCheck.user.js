@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VibeCheck
 // @namespace    https://vibecheck.dylanpdx.io
-// @version      0.1.1
+// @version      0.1.2
 // @description  Userscript for listing contributions by AI Agents
 // @author       dylanpdx
 // @match        https://github.com/*
@@ -33,20 +33,23 @@ const agents = [
 ]
 
 async function getValue(key){
-    if (typeof GM !== 'undefined'){
+    if (typeof GM !== 'undefined' && GM.getValue){
         return GM.getValue(key)
+    }else if (typeof GM_getValue !== 'undefined'){
+      return GM_getValue(key)
     }else if (typeof browser.storage !== 'undefined'){
         const result = await browser.storage.local.get(key);
         return result[key];
     }
     console.error("no suitable storage");
     return undefined;
-    
 }
 
 async function setValue(key,value){
-    if (typeof GM !== 'undefined'){
+    if (typeof GM !== 'undefined' && GM.setValue){
         return GM.setValue(key,value);
+    }else if (typeof GM_setValue !== 'undefined'){
+      return GM_setValue(key)
     }else if (typeof browser.storage !== 'undefined'){
         return browser.storage.local.set({[key]: value});
     }
@@ -73,7 +76,6 @@ async function getRepoContribs(username, reponame) {
                 "Accept": "application/json"
             }
         })).json();
-    
     return {"contributors":(await contributors_data),"sidebar":(await sidebar)}
 }
 
@@ -186,7 +188,6 @@ async function runScan(){
         else
         {
             // big repos don't populate change count
-            
             if (found.agentC[2] > 0){
                 warning.innerHTML = `<b>${found.agentC[2]}</b> commits to this repository are from known AI Agents.`;
             }else{
@@ -240,7 +241,6 @@ async function runScan(){
     });
 
     dom_observer.observe(document.documentElement || document.body, { subtree:true,attributeFilter:["class"],attributes:true });
-    
     document.head.append(Object.assign(document.createElement("style"), {
             type: "text/css",
             textContent: `
