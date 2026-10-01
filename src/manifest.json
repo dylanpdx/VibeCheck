@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "VibeCheck",
+  "version": "0.1",
+  "permissions": [
+    "storage"
+  ],
+  "icons":{
+    "128": "icon/icon.png"
+  },
+  "description": "Browser Extension for listing contributions by AI Agents",
+  "action": {},
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["VibeCheck.user.js"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "vibecheck@vibecheck.dylanpdx.io",
+      "strict_min_version": "45.0"
+    }
+  }
+}
