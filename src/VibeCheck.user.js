@@ -13,6 +13,7 @@
 
 
 const uidRegex = /\.com\/u\/([0-9]+)/gm
+const cacheDays = 1;
 const agents = [
     "claude",
     "cursoragent",
@@ -91,7 +92,10 @@ async function detectRepoAgents(username, reponame) {
     const sbKey = `sbvibecheck/${username}/${reponame}`;
     const stored = await getValue(sbKey);
     if (stored != null && stored != undefined) {
-        return JSON.parse(stored).d;
+        const jStored = JSON.parse(stored);
+        const lastFetched = jStored.t;
+        if (when <= (lastFetched + (86400000*cacheDays)))
+            return jStored.d;
     }
     const contributorData = await getRepoContribs(username, reponame);
     const contributors = contributorData.contributors;
