@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VibeCheck
 // @namespace    https://vibecheck.dylanpdx.io
-// @version      0.1
+// @version      0.1.1
 // @description  Userscript for listing contributions by AI Agents
 // @author       dylanpdx
 // @match        https://github.com/*
@@ -11,6 +11,8 @@
 // @downloadURL  https://vibecheck.dylanpdx.io/src/VibeCheck.user.js
 // ==/UserScript==
 
+
+const uidRegex = /\.com\/u\/([0-9]+)/gm
 const agents = [
     "claude",
     "cursoragent",
@@ -59,11 +61,19 @@ function newElement(type, attrs) {
 }
 
 async function getRepoContribs(username, reponame) {
-    return (await window.fetch(`https://github.com/${username}/${reponame}/graphs/contributors-data`, {
+    const contributors_data = (await window.fetch(`https://github.com/${username}/${reponame}/graphs/contributors-data`, {
             "headers": {
                 "Accept": "application/json"
             }
         })).json();
+
+    const sidebar = (await window.fetch(`https://github.com/${username}/${reponame}/_sidebar/contributors`, {
+            "headers": {
+                "Accept": "application/json"
+            }
+        })).json();
+    
+    return {"contributors":(await contributors_data),"sidebar":(await sidebar)}
 }
 
 function parseWeeks(weeks) {
@@ -83,7 +93,9 @@ async function detectRepoAgents(username, reponame) {
     if (stored != null && stored != undefined) {
         return JSON.parse(stored).d;
     }
-    const contributors = await getRepoContribs(username, reponame);
+    const contributorData = await getRepoContribs(username, reponame);
+    const contributors = contributorData.contributors;
+    const sidebar = contributorData.sidebar;
     let totalA = 0;
     let totalD = 0;
     let agentA = 0;
@@ -100,12 +112,24 @@ async function detectRepoAgents(username, reponame) {
             agentC += contribution.total;
             perAgent[author.login] = {
                 "id": author.id,
-                "totals": weekTotals
+                "totals": weekTotals,
             };
         }
         totalA += weekTotals[0];
         totalD += weekTotals[1];
     }
+
+    // check sidebar next
+    for (const contributor of sidebar.contributors){
+        if (agents.includes(contributor.login) && perAgent[contributor.login] == undefined) {
+            parsedUid = uidRegex.exec(contributor.avatarUrl);
+            perAgent[contributor.login] = {
+                "id":parseInt(parsedUid[1]),
+                "totals":[0,0,0]
+            }
+        }
+    }
+
     const detected = {
         "totalC": [totalA, totalD],
         "agentC": [agentA, agentD, agentC],
@@ -158,7 +182,12 @@ async function runScan(){
         else
         {
             // big repos don't populate change count
-            warning.innerHTML = `<b>${found.agentC[2]}</b> commits to this repository are from known AI Agents.`;
+            
+            if (found.agentC[2] > 0){
+                warning.innerHTML = `<b>${found.agentC[2]}</b> commits to this repository are from known AI Agents.`;
+            }else{
+                warning.innerHTML = `This repository tags a known AI Agent as a contributor.`;
+            }
         }
 
         const tooltip = newElement("div", {"class":"sbTooltip"});
@@ -172,7 +201,11 @@ async function runScan(){
             if (agentMetric != 0){
                 agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span class="sbAdd">+${agent.totals[0]}</span> <span class="sbDel">-${agent.totals[1]}</span> <span>(${parseFloat((agentMetric*100)).toFixed( 2 )}%)</span>`
             }else{
-                agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span>${agent.totals[2]} commits</span>`
+                if (agent.totals[2] > 0){
+                    agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span>${agent.totals[2]} commits</span>`
+                }else{
+                    agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span>(tagged)</span>`
+                }
             }
             agentInfo.appendChild(agentPic);
             agentInfo.appendChild(agentData);
