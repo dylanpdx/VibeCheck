@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VibeCheck
 // @namespace    https://vibecheck.dylanpdx.io
-// @version      0.1.3
+// @version      0.1.4
 // @description  Userscript for listing contributions by AI Agents
 // @author       dylanpdx
 // @match        https://github.com/*
@@ -34,12 +34,12 @@ const agents = [
 
 const backoff = {}
 
-async function getValue(key){
-    if (typeof GM !== 'undefined' && GM.getValue){
+async function getValue(key) {
+    if (typeof GM !== 'undefined' && GM.getValue) {
         return GM.getValue(key)
-    }else if (typeof GM_getValue !== 'undefined'){
-      return GM_getValue(key)
-    }else if (typeof browser !== 'undefined' && typeof browser.storage !== 'undefined'){
+    } else if (typeof GM_getValue !== 'undefined') {
+        return GM_getValue(key)
+    } else if (typeof browser !== 'undefined' && typeof browser.storage !== 'undefined') {
         const result = await browser.storage.local.get(key);
         return result[key];
     }
@@ -47,13 +47,15 @@ async function getValue(key){
     return undefined;
 }
 
-async function setValue(key,value){
-    if (typeof GM !== 'undefined' && GM.setValue){
-        return GM.setValue(key,value);
-    }else if (typeof GM_setValue !== 'undefined'){
-      return GM_setValue(key,value)
-    }else if (typeof browser !== 'undefined' && typeof browser.storage !== 'undefined'){
-        return browser.storage.local.set({[key]: value});
+async function setValue(key, value) {
+    if (typeof GM !== 'undefined' && GM.setValue) {
+        return GM.setValue(key, value);
+    } else if (typeof GM_setValue !== 'undefined') {
+        return GM_setValue(key, value)
+    } else if (typeof browser !== 'undefined' && typeof browser.storage !== 'undefined') {
+        return browser.storage.local.set({
+            [key]: value
+        });
     }
     console.error("no suitable storage");
 }
@@ -66,19 +68,26 @@ function newElement(type, attrs) {
     return element;
 }
 
-async function fetchJson(url){
-    const resp = await window.fetch(url,{"headers":{"Accept":"application/json"}})
-    if (resp.status !== 200) // 202?
-        throw new Error("fetchJson failed for "+url+": "+resp.status);
-    return resp.json();
+async function fetchJson(url) {
+    const resp = await window.fetch(url, {
+        "headers": {
+            "Accept": "application/json"
+        }
+    })
+        if (resp.status !== 200) // 202?
+            throw new Error("fetchJson failed for " + url + ": " + resp.status);
+        return resp.json();
 }
 
 async function getRepoContribs(username, reponame) {
-    const [contributors_data,sidebar] = await Promise.all([
-        fetchJson(`https://github.com/${username}/${reponame}/graphs/contributors-data`),
-        fetchJson(`https://github.com/${username}/${reponame}/_sidebar/contributors`)
-    ])
-    return {"contributors":(await contributors_data),"sidebar":(await sidebar)}
+    const[contributors_data, sidebar] = await Promise.all([
+                fetchJson(`https://github.com/${username}/${reponame}/graphs/contributors-data`),
+                fetchJson(`https://github.com/${username}/${reponame}/_sidebar/contributors`)
+            ])
+        return {
+        "contributors": (await contributors_data),
+        "sidebar": (await sidebar)
+    }
 }
 
 function parseWeeks(weeks) {
@@ -98,7 +107,7 @@ async function detectRepoAgents(username, reponame) {
     if (stored != null && stored != undefined) {
         const jStored = JSON.parse(stored);
         const lastFetched = jStored.t;
-        if (when <= (lastFetched + (86400000*cacheDays)))
+        if (when <= (lastFetched + (86400000 * cacheDays)))
             return jStored.d;
     }
     const contributorData = await getRepoContribs(username, reponame);
@@ -128,12 +137,12 @@ async function detectRepoAgents(username, reponame) {
     }
 
     // check sidebar next
-    for (const contributor of sidebar.contributors){
+    for (const contributor of sidebar.contributors) {
         if (agents.includes(contributor.login) && perAgent[contributor.login] == undefined) {
             parsedUid = uidRegex.exec(contributor.avatarUrl);
             perAgent[contributor.login] = {
-                "id":parseInt(parsedUid[1]),
-                "totals":[0,0,0]
+                "id": parseInt(parsedUid[1]),
+                "totals": [0, 0, 0]
             }
         }
     }
@@ -154,50 +163,55 @@ async function detectRepoAgents(username, reponame) {
 }
 
 function calcMetric(agentC, totalC) {
-    if (agentC[0] == 0 || agentC[1] == 0 || totalC[0] == 0 || totalC[1] == 0)
-    {
+    if (agentC[0] == 0 || agentC[1] == 0 || totalC[0] == 0 || totalC[1] == 0) {
         return 0;
     }
     return ((agentC[0] / totalC[0]) + (agentC[1] / totalC[1])) / 2;
 }
 
-async function runScan(){
+async function runScan() {
     const path = window.location.pathname.split("/")
-    if (path.length != 3) {
-        return;
-    }
-    const username = path[1]
-    const repo = path[2];
-    const repoid = username+"-"+repo;
+        if (path.length != 3) {
+            return;
+        }
+        const username = path[1]
+        const repo = path[2];
+    const repoid = username + "-" + repo;
 
     if (backoff[repoid] != undefined && backoff[repoid] < Date.now())
         return;
 
     const header = document.querySelectorAll('div[class^="OverviewContent-"].mt-0')[0];
-    if (header == undefined) return;
+    if (header == undefined)
+        return;
     if (header.getAttribute("data-vibecheck") == repoid)
         return;
-    header.setAttribute("data-vibecheck",repoid);
+    header.setAttribute("data-vibecheck", repoid);
 
     let found = {}
-    try{
+    try {
         found = await detectRepoAgents(username, repo);
-        
-    }catch (e){
-        backoff[repoid] = Date.now()+10000;
+
+    } catch (e) {
+        backoff[repoid] = Date.now() + 10000; // todo: add a message saying it's still scanning(?)
         header.removeAttribute("data-vibecheck")
         return;
     }
-    
 
     if (found.hasagent) {
 
-        var agentBusterSection = newElement("section", {"class":"sb Banner"});
+        var agentBusterSection = newElement("section", {
+            "class": "sb Banner"
+        });
 
-        var container = newElement("div", {"class":"BannerContainer"});
+        var container = newElement("div", {
+            "class": "BannerContainer"
+        });
         agentBusterSection.appendChild(container)
 
-        var content = newElement("div", {"class":"BannerContent"});
+        var content = newElement("div", {
+            "class": "BannerContent"
+        });
 
         var warning = newElement("span", {});
 
@@ -207,27 +221,37 @@ async function runScan(){
             warning.innerHTML = `<b>${parseFloat((agentMetric*100)).toFixed( 2 )}%</b> of contributions to this repository are from known AI Agents.`;
         else // big repos don't populate change count
         {
-            if (found.agentC[2] > 0){
+            if (found.agentC[2] > 0) {
                 warning.innerHTML = `<b>${found.agentC[2]}</b> commits to this repository are from known AI Agents.`;
-            }else{
+            } else {
                 warning.innerHTML = `This repository tags a known AI Agent as a contributor.`;
             }
         }
 
-        const tooltip = newElement("div", {"class":"sbTooltip"});
+        const tooltip = newElement("div", {
+            "class": "sbTooltip"
+        });
 
         for (const agentName of Object.keys(found.agents)) {
             const agent = found.agents[agentName];
-            const agentInfo = newElement("div", {"class":"agentInfo"});
-            const agentPic = newElement("img", {"src":`https://avatars.githubusercontent.com/u/${agent.id}?size=40`,"height":"20","class": "sbAvatar"});
-            const agentData = newElement("span", {"class":"agentData"});
+            const agentInfo = newElement("div", {
+                "class": "agentInfo"
+            });
+            const agentPic = newElement("img", {
+                "src": `https://avatars.githubusercontent.com/u/${agent.id}?size=40`,
+                "height": "20",
+                "class": "sbAvatar"
+            });
+            const agentData = newElement("span", {
+                "class": "agentData"
+            });
             const agentMetric = calcMetric(agent.totals, found.totalC);
-            if (agentMetric != 0){
+            if (agentMetric != 0) {
                 agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span class="sbAdd">+${agent.totals[0]}</span> <span class="sbDel">-${agent.totals[1]}</span> <span>(${parseFloat((agentMetric*100)).toFixed( 2 )}%)</span>`
-            }else{
-                if (agent.totals[2] > 0){
+            } else {
+                if (agent.totals[2] > 0) {
                     agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span>${agent.totals[2]} commits</span>`
-                }else{
+                } else {
                     agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span>(tagged)</span>`
                 }
             }
@@ -245,14 +269,11 @@ async function runScan(){
     }
 }
 
-
-
 (async function () {
     'use strict';
 
     setInterval(runScan, 1000);
 
-    dom_observer.observe(document.documentElement || document.body, { subtree:true,attributeFilter:["class"],attributes:true });*/
     document.head.append(Object.assign(document.createElement("style"), {
             type: "text/css",
             textContent: `
