@@ -4,7 +4,7 @@
   <img src="./src/icon/icon.svg" height="200px"/>
 </p>
 <div align="center">
-<h3><a>Install Userscript</a><!-- | <a>View on Firefox Add-Ons</a> | <a>View on Chrome Web Store</a></h3> -->
+<h3><a href="https://vibecheck.dylanpdx.io/src/VibeCheck.user.js">Install Userscript</a><!-- | <a>View on Firefox Add-Ons</a> | <a>View on Chrome Web Store</a></h3> -->
 </div>
 <br>
 
