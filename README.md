@@ -10,7 +10,7 @@
 
 A Userscript<!-- and Browser Extension--> for listing contributions by AI Agents on GitHub repositories, and more sites in the future.
 
-It can be installed (if you have a compatible Userscript extension i.e [ViolentMonkey](https://violentmonkey.github.io/)) by clocking the "Install Userscript" link above
+It can be installed (if you have a compatible Userscript extension i.e [ViolentMonkey](https://violentmonkey.github.io/)) by clicking the "Install Userscript" link above
 
 > [!IMPORTANT]
 > You should not rely on this project to know for certain if code is or isn't AI generated. It's just a tool for gaining insights into a repository's history. Please read the "False positives?" section below
