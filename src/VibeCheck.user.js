@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VibeCheck
 // @namespace    https://vibecheck.dylanpdx.io
-// @version      0.1.4
+// @version      0.1.5
 // @description  Userscript for listing contributions by AI Agents
 // @author       dylanpdx
 // @match        https://github.com/*
@@ -139,7 +139,7 @@ async function detectRepoAgents(username, reponame) {
     // check sidebar next
     for (const contributor of sidebar.contributors) {
         if (agents.includes(contributor.login) && perAgent[contributor.login] == undefined) {
-            parsedUid = uidRegex.exec(contributor.avatarUrl);
+            let parsedUid = uidRegex.exec(contributor.avatarUrl);
             perAgent[contributor.login] = {
                 "id": parseInt(parsedUid[1]),
                 "totals": [0, 0, 0]
@@ -181,7 +181,7 @@ async function runScan() {
     if (backoff[repoid] != undefined && backoff[repoid] < Date.now())
         return;
 
-    const header = document.querySelectorAll('div[class^="OverviewContent-"].mt-0')[0];
+    const header = document.querySelector('header[data-component="SplitPageLayout.Header"]').parentNode.querySelector('div[data-component="SplitPageLayout.Content"] > div > div')
     if (header == undefined)
         return;
     if (header.getAttribute("data-vibecheck") == repoid)
