@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VibeCheck
 // @namespace    https://vibecheck.dylanpdx.io
-// @version      0.1.5
+// @version      0.1.6
 // @description  Userscript for listing contributions by AI Agents
 // @author       dylanpdx
 // @match        https://github.com/*
@@ -29,7 +29,8 @@ const agents = [
     "leeroo-coder",
     "InsightFactoryAPP",
     "Orkas-AI",
-    "Copilot" // app
+    "Copilot", // app
+    "codebuff-team"
 ]
 
 const backoff = {}
