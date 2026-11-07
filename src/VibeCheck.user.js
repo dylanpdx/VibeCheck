@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VibeCheck
 // @namespace    https://vibecheck.dylanpdx.io
-// @version      0.1.6
+// @version      0.1.7
 // @description  Userscript for listing contributions by AI Agents
 // @author       dylanpdx
 // @match        https://github.com/*
@@ -248,10 +248,10 @@ async function runScan() {
             });
             const agentMetric = calcMetric(agent.totals, found.totalC);
             if (agentMetric != 0) {
-                agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span class="sbAdd">+${agent.totals[0]}</span> <span class="sbDel">-${agent.totals[1]}</span> <span>(${parseFloat((agentMetric*100)).toFixed( 2 )}%)</span>`
+                agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <a href=https://github.com/${username}/${repo}/commits?author=${agentName} class='contribData'><span class="sbAdd">+${agent.totals[0]}</span> <span class="sbDel">-${agent.totals[1]}</span> <span>(${parseFloat((agentMetric*100)).toFixed( 2 )}%)</span></a>`
             } else {
                 if (agent.totals[2] > 0) {
-                    agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span>${agent.totals[2]} commits</span>`
+                    agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <a href=https://github.com/${username}/${repo}/commits?author=${agentName} class='contribData'><span>${agent.totals[2]} commits</span></span>`
                 } else {
                     agentData.innerHTML = `<a href="https://github.com/${agentName}">${agentName}</a> <span>(tagged)</span>`
                 }
@@ -318,6 +318,14 @@ color: var(--fgColor-success,var(--color-success-fg)) !important
 color: var(--fgColor-danger,var(--color-danger-fg)) !important
 }
 
+.contribData {
+  text-decoration: unset;
+  color: unset;
+}
+
+.contribData:where(:hover, :focus) {
+  text-decoration: underline 1px solid;
+}
 `
         }))
 })();
